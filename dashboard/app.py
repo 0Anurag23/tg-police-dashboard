@@ -4,8 +4,22 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from db.database import engine, Article
+from db.database import Article, Base
+
+import streamlit as st
+from urllib.parse import quote_plus
+
+try:
+    # Production — uses Streamlit Cloud secrets
+    password = quote_plus(st.secrets["SUPABASE_PASSWORD"])
+except:
+    # Local — uses hardcoded password
+    password = quote_plus("UsingaDatabase@11")
+
+SUPABASE_URL = f"postgresql://postgres.enhuqacwlmsudqlalxle:{password}@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
+engine = create_engine(SUPABASE_URL)
 
 # ── Page config ──────────────────────────────────────────────────
 st.set_page_config(
