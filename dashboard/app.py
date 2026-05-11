@@ -1,25 +1,14 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from db.database import Article, Base
-
-import streamlit as st
 from urllib.parse import quote_plus
-
-try:
-    # Production — uses Streamlit Cloud secrets
-    password = quote_plus(st.secrets["SUPABASE_PASSWORD"])
-except:
-    # Local — uses hardcoded password
-    password = quote_plus("UsingaDatabase@11")
-
-SUPABASE_URL = f"postgresql://postgres.enhuqacwlmsudqlalxle:{password}@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
-engine = create_engine(SUPABASE_URL)
 
 # ── Page config ──────────────────────────────────────────────────
 st.set_page_config(
@@ -28,11 +17,46 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title(" Telangana Police News Dashboard")
-st.caption("Live news aggregator — powered by crewAI + Qwen2.5")
+# ── Database connection ───────────────────────────────────────────
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+try:
+    # Production — Streamlit Cloud secrets
+    password = quote_plus(st.secrets["SUPABASE_PASSWORD"])
+except:
+    # Local — .env file
+    password = quote_plus(os.getenv("SUPABASE_PASSWORD", ""))
+
+SUPABASE_URL = f"postgresql://postgres.enhuqacwlmsudqlalxle:{password}@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
+engine = create_engine(SUPABASE_URL)
+
+# ── Category colors and icons ─────────────────────────────────────
+CAT_ICONS = {
+    "Crime": "🔴",
+    "Drugs": "🟠",
+    "Recruitment": "🟢",
+    "Awards": "🏆",
+    "Infrastructure": "🔵",
+    "Awareness": "🟡",
+    "Other": "⚪",
+    "Uncategorized": "⚫"
+}
+
+CAT_COLORS = {
+    "Crime": "#ef4444",
+    "Drugs": "#f97316",
+    "Recruitment": "#22c55e",
+    "Awards": "#eab308",
+    "Infrastructure": "#3b82f6",
+    "Awareness": "#a855f7",
+    "Other": "#6b7280",
+    "Uncategorized": "#9ca3af"
+}
 
 # ── Load data ─────────────────────────────────────────────────────
-@st.cache_data(ttl=300)  # refresh every 5 minutes
+@st.cache_data(ttl=300)
 def load_articles():
     with Session(engine) as session:
         articles = session.query(Article).filter(
@@ -51,54 +75,85 @@ def load_articles():
 
 df = load_articles()
 
+# Fix category names
+df["category"] = df["category"].replace({
+    "Crimes Drugs": "Drugs",
+    "crimes drugs": "Drugs",
+})
+
+# ── Header ────────────────────────────────────────────────────────
+st.title("🚔 Telangana Police News Dashboard")
+st.caption("Live news aggregator — powered by crewAI + Qwen2.5 | Auto-refreshes every 6 hours")
+
 # ── Top metrics ───────────────────────────────────────────────────
 st.markdown("---")
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total Articles", len(df))
-col2.metric("Categories", df["category"].nunique())
-col3.metric("Sources", df["source"].nunique())
-col4.metric("Latest", df["date"].max().strftime("%d %b %Y") if len(df) > 0 else "N/A")
-
+col1, col2, col3, col4, col5 = st.columns(5)
+col1.metric("📰 Total Articles", len(df))
+col2.metric("🗂️ Categories", df["category"].nunique())
+col3.metric("📡 Sources", df["source"].nunique())
+col4.metric("📅 Latest", pd.to_datetime(df["date"]).max().strftime("%d %b %Y") if len(df) > 0 else "N/A")
+col5.metric("🆕 Today", len(df[pd.to_datetime(df["date"]).dt.date == pd.Timestamp.now().date()]))
 st.markdown("---")
 
-# ── Charts row ────────────────────────────────────────────────────
+# ── Charts ────────────────────────────────────────────────────────
 col_left, col_right = st.columns(2)
 
 with col_left:
-    st.subheader("Articles by Category")
+    st.subheader("📊 Articles by Category")
     cat_counts = df["category"].value_counts().reset_index()
     cat_counts.columns = ["Category", "Count"]
+    colors = [CAT_COLORS.get(c, "#6b7280") for c in cat_counts["Category"]]
     fig = px.bar(
         cat_counts, x="Category", y="Count",
-        color="Category", text="Count",
-        color_discrete_sequence=px.colors.qualitative.Set2
+        color="Category",
+        color_discrete_map=CAT_COLORS,
+        text="Count"
     )
     fig.update_layout(showlegend=False, height=300, margin=dict(t=10))
-    st.plotly_chart(fig, width='stretch')
+    fig.update_traces(textposition="outside")
+    st.plotly_chart(fig, width="stretch")
 
 with col_right:
-    st.subheader("Articles Over Time")
+    st.subheader("📈 Articles Over Time (Last 30 Days)")
     df["day"] = pd.to_datetime(df["date"]).dt.date
     last_30 = pd.Timestamp.now() - pd.Timedelta(days=30)
     time_counts = df[pd.to_datetime(df["date"]) >= last_30].groupby("day").size().reset_index(name="Count")
-    # df["day"] = pd.to_datetime(df["date"]).dt.date
-    # time_counts = df.groupby("day").size().reset_index(name="Count")
     fig2 = px.line(
         time_counts, x="day", y="Count",
-        markers=True, color_discrete_sequence=["#2563eb"]
+        markers=True,
+        color_discrete_sequence=["#3b82f6"]
     )
     fig2.update_layout(height=300, margin=dict(t=10))
-    st.plotly_chart(fig2, width='stretch')
+    st.plotly_chart(fig2, width="stretch")
+
+st.markdown("---")
+
+# ── Top Sources ───────────────────────────────────────────────────
+st.subheader("📡 Top News Sources")
+source_counts = df["source"].value_counts().head(8).reset_index()
+source_counts.columns = ["Source", "Count"]
+fig3 = px.bar(
+    source_counts, x="Count", y="Source",
+    orientation="h",
+    color_discrete_sequence=["#3b82f6"],
+    text="Count"
+)
+fig3.update_layout(height=250, margin=dict(t=10))
+fig3.update_traces(textposition="outside")
+st.plotly_chart(fig3, width="stretch")
 
 st.markdown("---")
 
 # ── Filters ───────────────────────────────────────────────────────
-st.subheader(" Filter & Search")
+st.subheader("🔍 Filter & Search")
 col_f1, col_f2, col_f3 = st.columns(3)
 
 with col_f1:
     all_cats = ["All"] + sorted(df["category"].dropna().unique().tolist())
-    selected_cat = st.selectbox("Category", all_cats)
+    cat_counts_dict = df["category"].value_counts().to_dict()
+    cat_options = ["All"] + [f"{c} ({cat_counts_dict.get(c, 0)})" for c in sorted(df["category"].dropna().unique().tolist())]
+    selected_cat_display = st.selectbox("Category", cat_options)
+    selected_cat = "All" if selected_cat_display == "All" else selected_cat_display.split(" (")[0]
 
 with col_f2:
     search = st.text_input("Search headlines", placeholder="e.g. Hyderabad, drugs, arrest...")
@@ -119,11 +174,15 @@ if search:
 if sort_by == "Oldest first":
     filtered = filtered.sort_values("date", ascending=True)
 
-st.caption(f"Showing {len(filtered)} articles")
+st.caption(f"Showing **{len(filtered)}** articles")
 st.markdown("---")
 
 # ── News cards ────────────────────────────────────────────────────
 for _, row in filtered.iterrows():
+    cat = row["category"]
+    icon = CAT_ICONS.get(cat, "⚪")
+    color = CAT_COLORS.get(cat, "#6b7280")
+
     with st.container():
         col_main, col_meta = st.columns([4, 1])
 
@@ -133,20 +192,18 @@ for _, row in filtered.iterrows():
             if row["tags"]:
                 tags = row["tags"].split(",")
                 tag_html = " ".join([
-                    f'<span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:12px;margin:2px">{t.strip()}</span>'
-                    for t in tags
+                    f'<span style="background:#e0f2fe;color:#0369a1;padding:2px 10px;border-radius:20px;font-size:12px;margin:2px;display:inline-block">{t.strip()}</span>'
+                    for t in tags if t.strip()
                 ])
                 st.markdown(tag_html, unsafe_allow_html=True)
 
         with col_meta:
-            cat_colors = {
-                "Crime": "", "Drugs": "", "Recruitment": "",
-                "Awards": "", "Infrastructure": "",
-                "Awareness": "", "Other": ""
-            }
-            icon = cat_colors.get(row["category"], "")
-            st.markdown(f"**{icon} {row['category']}**")
-            st.caption(f" {row['date'].strftime('%d %b %Y')}")
-            st.caption(f" {row['source']}")
+            st.markdown(
+                f'<div style="background:{color}20;border-left:4px solid {color};padding:8px 12px;border-radius:4px">'
+                f'<strong>{icon} {cat}</strong></div>',
+                unsafe_allow_html=True
+            )
+            st.caption(f"📅 {pd.to_datetime(row['date']).strftime('%d %b %Y')}")
+            st.caption(f"📡 {row['source']}")
 
         st.markdown("---")
