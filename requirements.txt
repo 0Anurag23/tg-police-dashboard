@@ -1,0 +1,12 @@
+browser-use
+crewai
+playwright
+pandas
+python-dotenv
+streamlit
+sqlalchemy
+langchain-ollama
+plotly
+newspaper3k 
+lxml_html_clean
+schedule
