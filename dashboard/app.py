@@ -144,6 +144,49 @@ st.plotly_chart(fig3, width="stretch")
 
 st.markdown("---")
 
+# ── District Map ─────────────────────────────────────────────────
+st.subheader("🗺️ Telangana District News Map")
+st.caption("Bubble size = number of articles mentioning that district. Click a district to filter news.")
+
+from streamlit_folium import st_folium
+from dashboard.telangana_map import create_district_map
+
+map_fig = create_district_map(df)
+map_data = st_folium(map_fig, width="100%", height=500, key="district_map")
+
+# Persist selected district across reruns
+if "selected_district" not in st.session_state:
+    st.session_state.selected_district = None
+
+# Detect clicked district
+if map_data and map_data.get("last_object_clicked_tooltip"):
+    tooltip = map_data["last_object_clicked_tooltip"]
+
+    for district in create_district_map.__globals__["TELANGANA_DISTRICTS"].keys():
+        if district in tooltip:
+            # Toggle selection
+            if st.session_state.selected_district == district:
+                st.session_state.selected_district = None
+            else:
+                st.session_state.selected_district = district
+            break
+
+selected_district = st.session_state.selected_district
+
+# Show selected district + clear button
+col_map1, col_map2 = st.columns([3, 1])
+
+with col_map1:
+    if selected_district:
+        st.info(f"📍 Filtered to: **{selected_district}**")
+
+with col_map2:
+    if st.button("❌ Clear Filter"):
+        st.session_state.selected_district = None
+        st.rerun()
+
+st.markdown("---")
+
 # ── Filters ───────────────────────────────────────────────────────
 st.subheader("🔍 Filter & Search")
 col_f1, col_f2, col_f3 = st.columns(3)
@@ -165,6 +208,13 @@ with col_f3:
 filtered = df.copy()
 if selected_cat != "All":
     filtered = filtered[filtered["category"] == selected_cat]
+
+# Filter by district if map was clicked
+if selected_district:
+    filtered = filtered[
+        filtered["tags"].str.contains(selected_district, case=False, na=False) |
+        filtered["title"].str.contains(selected_district, case=False, na=False)
+    ]
 if search:
     filtered = filtered[
         filtered["title"].str.contains(search, case=False, na=False) |
