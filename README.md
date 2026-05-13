@@ -1,29 +1,75 @@
 # 🚔 Telangana Police News Dashboard
 
-> An AI-powered live news aggregator and analytics dashboard for Telangana Police news — built with crewAI, Qwen2.5, and Streamlit.
+An AI-powered live news aggregation and analytics dashboard for Telangana Police-related news.
+
+Built using **crewAI**, **Qwen2.5**, **Ollama**, **Supabase**, and **Streamlit**.
+
+---
 
 ## 🌐 Live Demo
-**[→ View Live Dashboard](https://tg-police-dashboard.streamlit.app)**
+
+👉 **Dashboard:** [View Live Dashboard](https://tg-police-news.streamlit.app/)
 
 ---
 
 ## 📌 Problem Statement
-Tracking Telangana Police news across multiple sources (The Hindu, Deccan Chronicle, Siasat Daily, etc.) is time-consuming and scattered. This project automates collection, categorization, and summarization of all TG Police news into a single searchable dashboard — updated every 6 hours automatically.
+
+Tracking Telangana Police news across multiple sources is fragmented and time-consuming.
+
+This project automates:
+
+- News collection from multiple trusted sources
+- AI-based categorization and summarization
+- District-wise tagging and analytics
+- Visualization through an interactive dashboard
+
+The system updates automatically every **6 hours**.
 
 ---
 
 ## ✨ Features
-- **Multi-source scraping** — aggregates from 6 Google News RSS feeds
-- **AI categorization** — automatically labels each article as Crime, Drugs, Recruitment, Awards, Infrastructure, or Awareness
-- **AI summarization** — generates a 3-line factual summary per article using Qwen2.5:7b
-- **Tag extraction** — pulls district names, crime types, and key topics
-- **Live dashboard** — searchable, filterable news feed with charts
-- **Auto-refresh** — scheduler runs every 6 hours automatically
-- **Cloud database** — articles stored in Supabase PostgreSQL
+
+- 📰 **Multi-source scraping**
+  - Aggregates from 6 Google News RSS feeds
+
+- 🤖 **AI categorization**
+  - Automatically classifies articles into:
+    - Crime
+    - Drugs
+    - Recruitment
+    - Awards
+    - Infrastructure
+    - Awareness
+
+- 📝 **AI summarization**
+  - Generates concise 3-line summaries using `Qwen2.5:7b`
+
+- 🏷️ **Tag extraction**
+  - Extracts:
+    - District names
+    - Crime types
+    - Key topics
+
+- 🗺️ **Interactive district map**
+  - Visualizes all **33 Telangana districts**
+  - Click any district to filter articles
+
+- 📊 **Dashboard analytics**
+  - Searchable news feed
+  - Charts
+  - Filters
+  - Heatmaps
+
+- ⏰ **Automated scheduler**
+  - Runs every 6 hours
+
+- ☁️ **Cloud database**
+  - Supabase PostgreSQL integration
 
 ---
 
 ## 🗂️ Categories Tracked
+
 | Category | Description |
 |---|---|
 | Crime | Arrests, FIRs, investigations |
@@ -36,71 +82,91 @@ Tracking Telangana Police news across multiple sources (The Hindu, Deccan Chroni
 ---
 
 ## 🛠️ Tech Stack
+
 | Component | Tool | Purpose |
 |---|---|---|
-| Web scraping | Google News RSS + newspaper3k | Collect articles |
-| Browser automation | browser-use + Playwright | Dynamic site scraping |
-| AI pipeline | crewAI + Qwen2.5:7b (Ollama) | Categorize, summarize, tag |
-| Database (local) | SQLite | Development storage |
-| Database (cloud) | Supabase PostgreSQL | Production storage |
-| Dashboard | Streamlit + Plotly | Visualization |
-| Scheduler | schedule (Python) | Auto-refresh every 6hrs |
-| Deployment | Streamlit Cloud | Free public hosting |
+| Web Scraping | Google News RSS + newspaper3k | Collect articles |
+| AI Pipeline | crewAI + Qwen2.5 (Ollama) | Categorization + summarization + tagging |
+| Local Database | SQLite | Development storage |
+| Cloud Database | Supabase PostgreSQL | Production storage |
+| Dashboard | Streamlit + Plotly + Folium | Visualization |
+| District Map | Folium + GeoJSON | Telangana district heatmap |
+| Scheduler | schedule (Python) | Automated refresh |
+| Deployment | Streamlit Cloud | Public hosting |
 
 ---
 
 ## 📁 Project Structure
 
-```
-
+```bash
 tg-police-dashboard/
 ├── agents/
-│   ├── scrapper_agent.py      # RSS scraper with source extraction
-│   └── article_fetcher.py     # Full article text fetcher
+│   ├── scraper_agent.py
+│   └── article_fetcher.py
 ├── db/
-│   └── database.py            # SQLAlchemy models + save functions
+│   └── database.py
 ├── pipeline/
-│   └── crew_pipeline.py       # crewAI agents (categorizer, summarizer, tagger)
+│   └── crew_pipeline.py
 ├── dashboard/
-│   ├── app.py                 # Streamlit dashboard
-│   └── requirements.txt       # Cloud deployment dependencies
+│   ├── app.py
+│   ├── telangana_map.py
+│   ├── data/
+│   │   └── telangana_districts.geojson
+│   └── requirements.txt
 ├── data/
-│   └── news.db                # Local SQLite database (gitignored)
-├── main.py                    # Manual scrape trigger
-├── scheduler.py               # Auto scheduler (runs every 6 hours)
-├── migrate_to_supabase.py     # One-time migration: SQLite → Supabase
-├── requirements.txt           # Full local dependencies
-├── SETUP.md                   # Local setup guide
+│   └── news.db
+├── main.py
+├── scheduler.py
+├── migrate_to_supabase.py
+├── requirements.txt
+├── SETUP.md
 └── .gitignore
-
 ```
 
-## 🔄 How It Works
-```
+---
 
+## 🔄 Workflow
+
+```text
 Google News RSS (6 feeds)
-↓
-scrapper_agent.py → extracts title, URL, date, source, body
-↓
-article_fetcher.py → fetches full article text (newspaper3k)
-↓
-crew_pipeline.py → 3 crewAI agents run on each article:
-• Categorizer agent  → labels category
-• Summarizer agent   → writes 3-line summary
-• Tag Extractor agent → pulls district + keywords
-↓
-Supabase PostgreSQL → stores all processed articles
-↓
-Streamlit Dashboard → displays with filters, search, charts
-
+        ↓
+scraper_agent.py
+        ↓
+article_fetcher.py
+        ↓
+crew_pipeline.py
+   ├── Categorizer
+   ├── Summarizer
+   └── Tag Extractor
+        ↓
+Supabase PostgreSQL
+        ↓
+Streamlit Dashboard
 ```
+
+---
+
+## 🗺️ District Map Features
+
+The dashboard includes an interactive Telangana district map with:
+
+- Bubble size proportional to article count
+- Color intensity based on article frequency
+- Click-to-filter functionality
+- Accurate district centroids from GeoJSON geometry
+
+---
 
 ## 📊 Sample Output
 
-**Input Article:**
-> Hyderabad Police bust major drug racket in Secunderabad
+### Input
 
-**AI Output:**
+```text
+Hyderabad Police bust major drug racket in Secunderabad
+```
+
+### AI Output
+
 ```json
 {
   "category": "Drugs",
@@ -112,14 +178,19 @@ Streamlit Dashboard → displays with filters, search, charts
 ---
 
 ## 🚀 Quick Start
-See **[SETUP.md](SETUP.md)** for full local setup instructions.
+
+See [SETUP.md](SETUP.md) for full setup instructions.
 
 ```bash
 git clone https://github.com/0Anurag23/tg-police-dashboard.git
 cd tg-police-dashboard
-python3 -m venv venv && source venv/bin/activate
+
+python3 -m venv venv
+source venv/bin/activate
+
 pip install -r requirements.txt
 ollama pull qwen2.5:7b-instruct
+
 python main.py
 streamlit run dashboard/app.py
 ```
@@ -127,18 +198,19 @@ streamlit run dashboard/app.py
 ---
 
 ## 🗺️ Roadmap
-- [x] Google News RSS scraping (6 feeds)
-- [x] crewAI pipeline (categorize, summarize, tag)
-- [x] Streamlit dashboard with charts and filters
-- [x] Auto-scheduler (every 6 hours)
+
+- [x] Google News RSS scraping
+- [x] crewAI processing pipeline
+- [x] Streamlit dashboard
+- [x] Auto scheduler
 - [x] Supabase cloud database
 - [x] Streamlit Cloud deployment
-- [ ] Twitter/X scraping via browser-use
-- [ ] Telangana district map visualization
-- [ ] Telegram daily digest alerts
-- [ ] Direct source scraping (Deccan Chronicle, Hans India)
+- [x] Telangana 33-district map
 
 ---
 
 ## 📝 License
-MIT License — free to use and modify.
+
+MIT License
+
+Free to use and modify.
