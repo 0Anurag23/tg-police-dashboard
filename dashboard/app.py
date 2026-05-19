@@ -160,10 +160,10 @@ if "selected_district" not in st.session_state:
 
 # Detect clicked district
 if map_data and map_data.get("last_object_clicked_tooltip"):
-    tooltip = map_data["last_object_clicked_tooltip"]
+    tooltip = str(map_data["last_object_clicked_tooltip"]).upper()
 
     for district in create_district_map.__globals__["TELANGANA_DISTRICTS"].keys():
-        if district in tooltip:
+        if district.upper() in tooltip:
             # Toggle selection
             if st.session_state.selected_district == district:
                 st.session_state.selected_district = None

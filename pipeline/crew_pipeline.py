@@ -152,7 +152,7 @@ def reprocess_enriched(limit: int = 20):
 
 
 if __name__ == "__main__":
-    run_pipeline(limit=366)
+    run_pipeline(limit=500)
 
 # if __name__ == "__main__":
 #     reprocess_enriched(limit=20)

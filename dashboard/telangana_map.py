@@ -132,7 +132,7 @@ def get_color(count, max_count):
 def create_district_map(df):
     counts = build_district_counts(df)
     max_count = max(counts.values()) if counts else 1
- 
+
     m = folium.Map(
         location=[17.5, 79.0],
         zoom_start=7,
@@ -140,85 +140,76 @@ def create_district_map(df):
         width="100%",
         height=500,
     )
- 
+
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     geojson_path = os.path.join(BASE_DIR, "data", "telangana_districts.geojson")
- 
+
     with open(geojson_path, "r") as f:
         geojson_data = json.load(f)
- 
+
+    # Add article counts to GeoJSON properties
+    for feature in geojson_data["features"]:
+        district_name = feature["properties"].get("district", "")
+        # Try to match district name
+        count = 0
+        for our_district, our_count in counts.items():
+            if our_district.lower() in district_name.lower() or district_name.lower() in our_district.lower():
+                count = our_count
+                break
+        feature["properties"]["article_count"] = count
+
+    def style_function(feature):
+        count = feature["properties"].get("article_count", 0)
+        color = get_color(count, max_count)
+        return {
+            "fillColor": color,
+            "color": "#1e3a8a",
+            "weight": 1.8,
+            "fillOpacity": 0.7,
+        }
+
+    def highlight_function(feature):
+        return {
+            "fillColor": "#fbbf24",
+            "color": "#1d4ed8",
+            "weight": 3,
+            "fillOpacity": 0.9,
+        }
+
     folium.GeoJson(
         geojson_data,
         name="Telangana Districts",
-        style_function=lambda feature: {
-            "fillColor": "#bfdbfe",
-            "color": "#1e3a8a",
-            "weight": 1.8,
-            "fillOpacity": 0.12,
-        },
-        highlight_function=lambda feature: {
-            "fillColor": "#60a5fa",
-            "color": "#1d4ed8",
-            "weight": 3,
-            "fillOpacity": 0.30,
-        },
+        style_function=style_function,
+        highlight_function=highlight_function,
         tooltip=folium.GeoJsonTooltip(
-            fields=["district"],        # matches the 'district' property in the new GeoJSON
-            aliases=["District:"],
-            sticky=False
+            fields=["district", "article_count"],
+            aliases=["District:", "Articles:"],
+            sticky=True,
+            labels=True,
+            style="""
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 6px 10px;
+                font-size: 13px;
+                font-weight: 500;
+            """,
         ),
     ).add_to(m)
- 
+
     m.fit_bounds([[15.8, 77.0], [19.9, 81.2]])
- 
-    for district, (lat, lon) in TELANGANA_DISTRICTS.items():
-        count = counts.get(district, 0)
-        color = get_color(count, max_count)
-        radius = max(8, min(40, count * 0.5 + 8))
- 
-        folium.CircleMarker(
-            location=[lat, lon],
-            radius=radius,
-            color="white",
-            weight=1.5,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.85,
-            tooltip=folium.Tooltip(
-                f"<b>{district}</b><br>📰 {count} articles",
-                sticky=True
-            ),
-            popup=folium.Popup(
-                f"<b>{district}</b><br>Articles: {count}",
-                max_width=200
-            ),
-        ).add_to(m)
- 
-        folium.Marker(
-            location=[lat, lon],
-            icon=folium.DivIcon(
-                html=f'''<div style="
-                    font-size:8px;font-weight:600;color:#1f2937;
-                    white-space:nowrap;background:rgba(255,255,255,0.75);
-                    padding:1px 4px;border-radius:4px;">
-                    {district}
-                </div>''',
-                icon_size=(120, 20),
-                icon_anchor=(0, 0),
-            )
-        ).add_to(m)
- 
+
     legend_html = """
     <div style="position:fixed;bottom:30px;left:30px;z-index:1000;
                 background:white;padding:10px 15px;border-radius:8px;
                 border:1px solid #ccc;font-size:12px;box-shadow:2px 2px 6px rgba(0,0,0,0.2)">
-        <b>📰 Articles</b><br>
-        <span style="background:#08306b;padding:2px 10px;color:white;border-radius:3px">High</span><br>
-        <span style="background:#2171b5;padding:2px 10px;color:white;border-radius:3px">Medium</span><br>
-        <span style="background:#6baed6;padding:2px 10px;color:white;border-radius:3px">Low</span><br>
-        <span style="background:#f7fbff;padding:2px 10px;color:#333;border-radius:3px;border:1px solid #ccc">None</span>
+        <b>📰 Articles per District</b><br><br>
+        <span style="background:#08306b;padding:2px 14px;color:white;border-radius:3px">██</span> High<br>
+        <span style="background:#2171b5;padding:2px 14px;color:white;border-radius:3px">██</span> Medium<br>
+        <span style="background:#6baed6;padding:2px 14px;color:white;border-radius:3px">██</span> Low<br>
+        <span style="background:#f7fbff;padding:2px 14px;color:#333;border-radius:3px;border:1px solid #ccc">██</span> None
     </div>
     """
     m.get_root().html.add_child(folium.Element(legend_html))
- 
+
     return m

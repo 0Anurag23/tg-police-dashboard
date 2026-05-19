@@ -5,9 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import requests
 from newspaper import Article as NewsArticle
 import time
-import requests
-from newspaper import Article as NewsArticle
-import time
+
 
 def fetch_full_article(url: str) -> str:
     """Fetch full article text from a URL."""
@@ -41,7 +39,7 @@ def fetch_fallback(url: str) -> str:
     except:
         return ""
 
-def enrich_articles_in_db(limit: int = 20):
+def enrich_articles_in_db(limit: int = 300):
     """Fetch full text for articles that only have snippet bodies."""
     from sqlalchemy.orm import Session
     from db.database import engine, Article
@@ -74,4 +72,4 @@ def enrich_articles_in_db(limit: int = 20):
         print(f"\nEnrichment complete!")
 
 if __name__ == "__main__":
-    enrich_articles_in_db(limit=20)
+    enrich_articles_in_db(limit=1700)
