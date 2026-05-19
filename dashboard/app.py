@@ -60,7 +60,8 @@ CAT_COLORS = {
 def load_articles():
     with Session(engine) as session:
         articles = session.query(Article).filter(
-            Article.summary != ""
+            Article.summary != "",
+            Article.category != "Uncategorized"
         ).order_by(Article.date.desc()).all()
         return pd.DataFrame([{
             "id":       a.id,
@@ -224,11 +225,73 @@ if search:
 if sort_by == "Oldest first":
     filtered = filtered.sort_values("date", ascending=True)
 
-st.caption(f"Showing **{len(filtered)}** articles")
+# ── Pagination ────────────────────────────────────────────────────
+ARTICLES_PER_PAGE = 20
+total = len(filtered)
+total_pages = max(1, (total + ARTICLES_PER_PAGE - 1) // ARTICLES_PER_PAGE)
+
+# Initialize page in session state
+if "current_page" not in st.session_state:
+    st.session_state.current_page = 1
+
+# Reset to page 1 when filters change
+filter_key = f"{selected_cat}_{search}_{sort_by}_{selected_district}"
+if "last_filter_key" not in st.session_state:
+    st.session_state.last_filter_key = filter_key
+if st.session_state.last_filter_key != filter_key:
+    st.session_state.current_page = 1
+    st.session_state.last_filter_key = filter_key
+
+# ── Top pagination controls ───────────────────────────────────────
+st.markdown(f"Showing **{total}** articles | Page **{st.session_state.current_page}** of **{total_pages}**")
+
+col_p1, col_p2, col_p3, col_p4, col_p5 = st.columns([1, 1, 2, 1, 1])
+
+with col_p1:
+    if st.button("⏮️ First", use_container_width=True):
+        st.session_state.current_page = 1
+        st.rerun()
+
+with col_p2:
+    if st.button("◀️ Prev", use_container_width=True):
+        if st.session_state.current_page > 1:
+            st.session_state.current_page -= 1
+            st.rerun()
+
+with col_p3:
+    jump_page = st.number_input(
+        "Go to page",
+        min_value=1,
+        max_value=total_pages,
+        value=st.session_state.current_page,
+        step=1,
+        label_visibility="collapsed"
+    )
+    if jump_page != st.session_state.current_page:
+        st.session_state.current_page = jump_page
+        st.rerun()
+
+with col_p4:
+    if st.button("Next ▶️", use_container_width=True):
+        if st.session_state.current_page < total_pages:
+            st.session_state.current_page += 1
+            st.rerun()
+
+with col_p5:
+    if st.button("Last ⏭️", use_container_width=True):
+        st.session_state.current_page = total_pages
+        st.rerun()
+
+page = st.session_state.current_page
+start = (page - 1) * ARTICLES_PER_PAGE
+end = start + ARTICLES_PER_PAGE
+page_df = filtered.iloc[start:end]
+
+st.caption(f"Showing articles **{start+1}–{min(end, total)}** of **{total}**")
 st.markdown("---")
 
 # ── News cards ────────────────────────────────────────────────────
-for _, row in filtered.iterrows():
+for _, row in page_df.iterrows():
     cat = row["category"]
     icon = CAT_ICONS.get(cat, "⚪")
     color = CAT_COLORS.get(cat, "#6b7280")
@@ -257,3 +320,29 @@ for _, row in filtered.iterrows():
             st.caption(f"📡 {row['source']}")
 
         st.markdown("---")
+
+# ── Bottom pagination controls ────────────────────────────────────
+st.markdown(f"Page **{page}** of **{total_pages}**")
+col_b1, col_b2, col_b3, col_b4, col_b5 = st.columns([1, 1, 2, 1, 1])
+
+with col_b1:
+    if st.button("⏮️ First ", use_container_width=True):
+        st.session_state.current_page = 1
+        st.rerun()
+
+with col_b2:
+    if st.button("◀️ Prev ", use_container_width=True):
+        if st.session_state.current_page > 1:
+            st.session_state.current_page -= 1
+            st.rerun()
+
+with col_b4:
+    if st.button("Next ▶️ ", use_container_width=True):
+        if st.session_state.current_page < total_pages:
+            st.session_state.current_page += 1
+            st.rerun()
+
+with col_b5:
+    if st.button("Last ⏭️ ", use_container_width=True):
+        st.session_state.current_page = total_pages
+        st.rerun()
