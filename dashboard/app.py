@@ -80,6 +80,8 @@ df = load_articles()
 df["category"] = df["category"].replace({
     "Crimes Drugs": "Drugs",
     "crimes drugs": "Drugs",
+    "Crimes": "Crime",      # ← add this
+    "crimes": "Crime",      # ← and this
 })
 
 # ── Header ────────────────────────────────────────────────────────
