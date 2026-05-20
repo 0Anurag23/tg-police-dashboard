@@ -2,12 +2,16 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from dotenv import load_dotenv
+from urllib.parse import quote_plus
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 from db.database import Article, Base, engine as sqlite_engine
 
-# Your Supabase connection string
-SUPABASE_URL = "postgresql://postgres.enhuqacwlmsudqlalxle:UsingaDatabase%4011@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
+load_dotenv()
+
+password = quote_plus(os.getenv("SUPABASE_PASSWORD", ""))
+SUPABASE_URL = f"postgresql://postgres.enhuqacwlmsudqlalxle:{password}@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
 
 # Create Supabase engine
 supabase_engine = create_engine(SUPABASE_URL)

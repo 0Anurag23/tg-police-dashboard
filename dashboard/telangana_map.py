@@ -203,11 +203,11 @@ def create_district_map(df):
     <div style="position:fixed;bottom:30px;left:30px;z-index:1000;
                 background:white;padding:10px 15px;border-radius:8px;
                 border:1px solid #ccc;font-size:12px;box-shadow:2px 2px 6px rgba(0,0,0,0.2)">
-        <b>📰 Articles per District</b><br><br>
-        <span style="background:#08306b;padding:2px 14px;color:white;border-radius:3px">██</span> High<br>
-        <span style="background:#2171b5;padding:2px 14px;color:white;border-radius:3px">██</span> Medium<br>
-        <span style="background:#6baed6;padding:2px 14px;color:white;border-radius:3px">██</span> Low<br>
-        <span style="background:#f7fbff;padding:2px 14px;color:#333;border-radius:3px;border:1px solid #ccc">██</span> None
+        <b style="color:#1f2937;">📰 Articles per District</b><br><br>
+        <span style="background:#08306b;padding:2px 14px;color:white;border-radius:3px">██</span> <span style="color:#1f2937;">High</span><br>
+        <span style="background:#2171b5;padding:2px 14px;color:white;border-radius:3px">██</span> <span style="color:#1f2937;">Medium</span><br>
+        <span style="background:#6baed6;padding:2px 14px;color:white;border-radius:3px">██</span> <span style="color:#1f2937;">Low</span><br>
+        <span style="background:#f7fbff;padding:2px 14px;color:#333;border-radius:3px;border:1px solid #ccc">██</span> <span style="color:#1f2937;">None</span>
     </div>
     """
     m.get_root().html.add_child(folium.Element(legend_html))

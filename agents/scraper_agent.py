@@ -50,8 +50,13 @@ SOURCES = [
 
     # ── District specific feeds ──────────────────────────────────
     {
-        "name": "district_warangal",
-        "url": "https://news.google.com/rss/search?q=Warangal+Police&hl=en-IN&gl=IN&ceid=IN:en",
+        "name": "district_warangal_Urban",
+        "url": "https://news.google.com/rss/search?q=Warangal+Urban+Police&hl=en-IN&gl=IN&ceid=IN:en",
+        "source": "Google News"
+    },
+    {
+        "name": "district_Warangal_rural",
+        "url": "https://news.google.com/rss/search?q=Warangal+Rural+Police&hl=en-IN&gl=IN&ceid=IN:en",
         "source": "Google News"
     },
     {
